@@ -538,6 +538,30 @@ function meetingUrlFor(event) {
   return event ? safeUrl(event.meetingUrl) : ""
 }
 
+// A calendar whose id is an email address is that Google account's own
+// calendar. Google ids for shared, holiday and other secondary calendars end
+// in calendar.google.com, so they never name an account.
+function calendarAccount(event) {
+  var id = event ? text(event.calendarId).trim().toLowerCase() : ""
+  if (!/^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$/.test(id)) return ""
+  if (/(^|\.)calendar\.google\.com$/.test(id.split("@")[1])) return ""
+  return id
+}
+
+// The link a Join opens. With several Google accounts signed in, a bare Meet
+// link opens as whichever account is the browser's default, so a Meet on an
+// account's own calendar names that account with authuser. The link shown or
+// copied stays as the invitation had it.
+function joinUrlFor(event) {
+  var url = meetingUrlFor(event)
+  var account = calendarAccount(event)
+  if (!account || !/^https:\/\/meet\.google\.com\//i.test(url) || /[?&]authuser=/i.test(url)) return url
+  var hash = url.indexOf("#")
+  var base = hash < 0 ? url : url.slice(0, hash)
+  var fragment = hash < 0 ? "" : url.slice(hash)
+  return base + (base.indexOf("?") < 0 ? "?" : "&") + "authuser=" + encodeURIComponent(account) + fragment
+}
+
 // The event's own page, used when there is nothing to join. Older files and
 // third-party writers have no such field, which is why this is never assumed.
 function eventUrlFor(event) {
@@ -576,7 +600,7 @@ function meetingService(url) {
 // clock, or a keybinding. Whoever sends an invitation sets its link, so only
 // a known video service opens blind; any other link is shown in the panel.
 function blindJoinUrl(event) {
-  var url = meetingUrlFor(event)
+  var url = joinUrlFor(event)
   var service = meetingService(url)
   return service && !service.anyoneCanHost ? url : ""
 }

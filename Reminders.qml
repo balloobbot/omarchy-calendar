@@ -141,7 +141,7 @@ Scope {
   }
 
   function notify(event, nowMs) {
-    var url = details ? (Model.meetingUrlFor(event) || Model.eventUrlFor(event)) : ""
+    var url = details ? (Model.joinUrlFor(event) || Model.eventUrlFor(event)) : ""
     var locale = Qt.locale(Strings.localeName(language))
     var body = Model.reminderBody(event, nowMs, language,
       function(ms) { return Qt.formatDateTime(new Date(ms), timeFormat) },

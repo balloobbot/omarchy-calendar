@@ -255,6 +255,25 @@ test('meetingUrlFor is empty rather than undefined when absent', () => {
   assert.equal(Model.meetingUrlFor({ meetingUrl: 'https://z.com/1' }), 'https://z.com/1')
 })
 
+test('joinUrlFor names the account of an account calendar on a Meet link', () => {
+  const meet = (calendarId, meetingUrl = 'https://meet.google.com/abc-defg-hij') => ({ calendarId, meetingUrl })
+  assert.equal(Model.joinUrlFor(meet('me@work.example')), 'https://meet.google.com/abc-defg-hij?authuser=me%40work.example')
+  assert.equal(Model.joinUrlFor(meet('Me@Work.Example', 'https://meet.google.com/abc?hs=1')), 'https://meet.google.com/abc?hs=1&authuser=me%40work.example')
+  assert.equal(Model.joinUrlFor(meet('me@work.example', 'https://meet.google.com/abc#x')), 'https://meet.google.com/abc?authuser=me%40work.example#x')
+  assert.equal(Model.joinUrlFor(meet('me@work.example', 'https://meet.google.com/abc?authuser=1')), 'https://meet.google.com/abc?authuser=1')
+  // Secondary, shared and holiday calendars name no account.
+  assert.equal(Model.joinUrlFor(meet('x1y2@group.calendar.google.com')), 'https://meet.google.com/abc-defg-hij')
+  assert.equal(Model.joinUrlFor(meet('en.usa#holiday@group.v.calendar.google.com')), 'https://meet.google.com/abc-defg-hij')
+  assert.equal(Model.joinUrlFor(meet('')), 'https://meet.google.com/abc-defg-hij')
+  // Only Meet understands authuser.
+  assert.equal(Model.joinUrlFor(meet('me@work.example', 'https://zoom.us/j/1')), 'https://zoom.us/j/1')
+  assert.equal(Model.joinUrlFor(meet('me@work.example', 'http://meet.google.com/abc')), '')
+  assert.equal(Model.joinUrlFor(null), '')
+  // The shown and copied link is left as the invitation had it.
+  assert.equal(Model.meetingUrlFor(meet('me@work.example')), 'https://meet.google.com/abc-defg-hij')
+  assert.equal(Model.blindJoinUrl(meet('me@work.example')), 'https://meet.google.com/abc-defg-hij?authuser=me%40work.example')
+})
+
 const meeting = (start, end, extra = {}) => ({
   id: 's', title: 'Standup', allDay: false, dateKey: '2026-08-10',
   start, end, meetingUrl: 'https://meet.google.com/x', ...extra

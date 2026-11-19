@@ -577,7 +577,7 @@ Panel {
   }
 
   function joinItem(item) {
-    root.openExternally(Model.meetingUrlFor(item))
+    root.openExternally(Model.joinUrlFor(item))
   }
 
   // The selected event's meeting, else the next one today with a link.
