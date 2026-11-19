@@ -237,3 +237,26 @@ test('notificationArg keeps option-looking text as text', () => {
   assert.equal(Model.notificationArg('Standup in 5 min'), 'Standup in 5 min')
   assert.equal(Model.notificationArg(''), '')
 })
+
+
+test('dismissal hides only one occurrence in one calendar and survives JSON reload', () => {
+  const meeting = event({ calendarId: 'work', reminders: [10], meetingUrl: 'https://meet.google.com/abc' })
+  const recurring = { ...meeting, start: localIso(2026, 9, 7, 13, 0), end: localIso(2026, 9, 7, 13, 45) }
+  const otherCalendar = { ...meeting, calendarId: 'personal' }
+  const dismissed = JSON.parse(JSON.stringify(Model.dismissEvent({}, meeting, START - 10 * MIN)))
+  const visible = Model.undismissedEvents([meeting, recurring, otherCalendar], dismissed, START - 5 * MIN)
+  assert.deepEqual(visible, [recurring, otherCalendar])
+  assert.equal(Model.isDismissed(meeting, dismissed, START), true)
+  assert.equal(Model.isDismissed(meeting, dismissed, START + 45 * MIN), false)
+  assert.deepEqual(Model.dueReminders(Model.undismissedEvents([meeting], dismissed, START - 5 * MIN), START - 5 * MIN, {}), [])
+  assert.equal(Model.barState(Model.undismissedEvents([meeting], dismissed, START), START, 15).phase, 'idle')
+})
+
+test('dismissal removes expired entries and preserves other active dismissals', () => {
+  const meeting = event()
+  const dismissed = Model.dismissEvent({ old: START - MIN, active: START + MIN }, meeting, START)
+  assert.equal(dismissed.old, undefined)
+  assert.equal(dismissed.active, START + MIN)
+  assert.equal(dismissed[Model.dismissedEventKey(meeting)], START + 45 * MIN)
+  assert.deepEqual(Model.dismissEvent({}, meeting, START + 45 * MIN), {})
+})

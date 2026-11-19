@@ -1221,6 +1221,27 @@ function reminderEventKey(event) {
   return text(event && event.id) + "|" + text(event && event.start)
 }
 
+function dismissedEventKey(event) {
+  return JSON.stringify([text(event && event.calendarId), reminderEventKey(event)])
+}
+
+function isDismissed(event, dismissed, nowMs) {
+  return Number((dismissed || {})[dismissedEventKey(event)]) > nowMs
+}
+
+function undismissedEvents(events, dismissed, nowMs) {
+  return (events || []).filter(function(event) { return !isDismissed(event, dismissed, nowMs) })
+}
+
+function dismissEvent(dismissed, event, nowMs) {
+  var next = {}
+  for (var key in (dismissed || {}))
+    if (Number(dismissed[key]) > nowMs) next[key] = Number(dismissed[key])
+  var end = timeRange(event).end
+  if (isFinite(end) && end > nowMs) next[dismissedEventKey(event)] = end
+  return next
+}
+
 // `recent` maps reminderEventKey → when its reminder was sent.
 function canSnoozeReminder(recent, event, nowMs) {
   var firedAt = recent ? recent[reminderEventKey(event)] : undefined

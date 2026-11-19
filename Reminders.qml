@@ -45,6 +45,7 @@ Scope {
   // the last Model.SNOOZE_WINDOW_MS. The panel offers "Snooze" while an
   // event is in here.
   property var recentlyFired: ({})
+  property var dismissedEvents: ({})
 
   readonly property int tickMs: 20000
   readonly property int minuteMs: 60 * 1000
@@ -63,12 +64,25 @@ Scope {
   // Sends the reminder for `event` again in `minutes`, even if the event has
   // started by then, as long as it has not ended.
   function snooze(event, minutes) {
-    if (!event || !store) return
+    if (!event || !store || Model.isDismissed(event, dismissedEvents, Date.now())) return
     var next = copyStore(store)
     var key = Model.reminderEventKey(event)
     next.snoozed[key] = { fireAtMs: Date.now() + Math.max(1, Number(minutes) || 5) * minuteMs, event: Model.slimReminderEvent(event) }
     delete next.recent[key]
     commit(next)
+  }
+
+  function dismiss(event) {
+    if (!event) return
+    dismissedEvents = Model.dismissEvent(dismissedEvents, event, Date.now())
+    dismissedFile.setText(JSON.stringify(dismissedEvents))
+    if (store) {
+      var next = copyStore(store)
+      var key = Model.reminderEventKey(event)
+      delete next.snoozed[key]
+      delete next.recent[key]
+      commit(next)
+    }
   }
 
   // A one-off toast that is not a reminder ("No meeting to join").
@@ -115,7 +129,7 @@ Scope {
   // ---- Sending
 
   function tick(nowMs) {
-    if (!enabled || !store || !isLeader()) return
+    if (!enabled || !store || !dismissedFile.ready || !isLeader()) return
     var next = copyStore(store)
     next.fired = Model.pruneFired(next.fired, nowMs)
 
@@ -129,7 +143,7 @@ Scope {
     for (var key in next.snoozed) {
       var snoozed = next.snoozed[key]
       if (!snoozed || Number(snoozed.fireAtMs) > nowMs) continue
-      if (Model.timeRange(snoozed.event).end > nowMs) {
+      if (Model.timeRange(snoozed.event).end > nowMs && !Model.isDismissed(snoozed.event, dismissedEvents, nowMs)) {
         notify(snoozed.event, nowMs)
         next.recent[key] = nowMs
       }
@@ -189,6 +203,25 @@ Scope {
     onLoadFailed: if (!root.store) root.commit(root.emptyStore(Date.now()))
     // The leader is the only writer, so a change it sees is its own write
     // coming back; the other screens pick it up for recentlyFired.
+    onFileChanged: if (!root.isLeader()) reload()
+  }
+
+  FileView {
+    id: dismissedFile
+    path: (Quickshell.env("HOME") || "") + "/.local/state/omarchy/calendar-dismissed.json"
+    atomicWrites: true
+    watchChanges: true
+    printErrors: false
+    property bool ready: false
+
+    onLoaded: {
+      try {
+        var parsed = JSON.parse(text())
+        root.dismissedEvents = parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {}
+      } catch (error) { root.dismissedEvents = {} }
+      ready = true
+    }
+    onLoadFailed: ready = true
     onFileChanged: if (!root.isLeader()) reload()
   }
 

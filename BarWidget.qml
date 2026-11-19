@@ -47,7 +47,9 @@ BarWidget {
     hideDeclined: true
   })
 
-  readonly property var barState: Model.barState(visibleEvents, nowMs, setting("announceLeadMinutes", 15), {
+  readonly property var announcedEvents: Model.undismissedEvents(visibleEvents, reminders.dismissedEvents, nowMs)
+
+  readonly property var barState: Model.barState(announcedEvents, nowMs, setting("announceLeadMinutes", 15), {
     liveUntilEnd: setting("duringEvent", "untilEnd") !== "firstMinutes",
     keepCurrent: setting("nextDuringEvent", "announce") === "keep"
   })
@@ -106,7 +108,7 @@ BarWidget {
   // With an event, the click was on its visible Join chip. Without one it
   // was blind, so a link from an unknown host opens the panel instead.
   function join(event) {
-    var meeting = event || Model.meetingToJoin(visibleEvents, Date.now(), barState.event)
+    var meeting = event || Model.meetingToJoin(announcedEvents, Date.now(), barState.event)
     var url = event ? Model.joinUrlFor(meeting) : Model.blindJoinUrl(meeting)
     if (url) Qt.openUrlExternally(url)
     else if (Model.meetingUrlFor(meeting)) open()
@@ -130,6 +132,12 @@ BarWidget {
 
   function canSnooze(event, nowMs) {
     return reminders.canSnooze(event, nowMs)
+  }
+
+  function dismiss(event) {
+    var primary = primaryWidget()
+    if (primary !== root && primary.dismiss) primary.dismiss(event)
+    else reminders.dismiss(event)
   }
 
   function snooze(event, minutes) {
@@ -208,7 +216,7 @@ BarWidget {
 
   Reminders {
     id: reminders
-    events: root.visibleEvents
+    events: root.announcedEvents
     enabled: root.setting("reminders", true) !== false
     details: root.setting("reminderDetails", false) === true
     language: root.language
@@ -309,6 +317,16 @@ BarWidget {
         fill: root.phaseColor
         interactive: true
         onClicked: root.join(root.barState.event)
+      }
+
+      Chip {
+        visible: root.announcing
+        text: Strings.tr(root.language, "bar.dismiss")
+        fontFamily: button.fontFamily
+        lineHeight: button.fontSize
+        fill: Qt.rgba(button.foreground.r, button.foreground.g, button.foreground.b, 0.6)
+        interactive: true
+        onClicked: root.dismiss(root.barState.event)
       }
 
       Chip {
