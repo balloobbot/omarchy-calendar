@@ -43,7 +43,7 @@ time away for an event title would be a downgrade you pay for all day.
   filled **Join** from 15 minutes before the start. Links are found in
   Google's conference data, and also in the location or description of an
   invitation forwarded by email (Meet, Zoom, Teams, Webex, Jitsi, Whereby)
-- **Dismiss** in the bar announcement, next-up card, or event details hides that occurrence and stops its reminders. It leaves the calendar invitation unchanged. Dismissals survive restarts and do not hide later occurrences.
+- **Dismiss** in the next-up card or event details hides that occurrence and stops its reminders. It leaves the calendar invitation unchanged. Dismissals survive restarts and do not hide later occurrences.
 - **Next up card**: what is next today, with a countdown and Join
 - **Upcoming days** under the selected day, so the week is one glance away
 - **Quick add** in plain English or Portuguese: `call with Ana tomorrow 2pm
@@ -65,10 +65,11 @@ time away for an event title would be a downgrade you pay for all day.
   Meet, notifications, colour. Off by default, see
   [Create and edit events](#create-and-edit-events)
 - **The bar escalates** as a meeting nears: a quiet title, then the accent
-  colour and a Join chip, then "Now" in the urgent colour until it ends, or
+  colour, then "Now" in the urgent colour until it ends, or
   for its first 2 minutes if you prefer. When the next event is due, it
   takes over, unless you keep the current one. A `+1` shows when two things
-  start at once. Middle click joins a Google Meet, Zoom, Teams, Webex,
+  start at once. Click the meeting text to join its call, or the clock to open
+  the calendar panel. Middle click joins a Google Meet, Zoom, Teams, Webex,
   meet.jit.si or Whereby link. The sender of an invitation sets its link,
   so any other link opens the panel, where you see it before you open it
 - **Settings in four sections**: Panel, Bar, Calendars and General, one at

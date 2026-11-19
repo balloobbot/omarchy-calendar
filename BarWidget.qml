@@ -9,9 +9,8 @@ import "Strings.js" as Strings
 
 // The bar clock, the host for the calendar panel, and the source of event
 // reminders. The clock is never traded away: an upcoming event is announced
-// next to it, quietly inside the lead time, in the accent colour with a Join
-// chip in the last 10 minutes, and in the urgent colour for the first 2
-// minutes after it starts.
+// next to it, quietly inside the lead time, in the accent colour in the
+// last 10 minutes, and in the urgent colour after it starts.
 //
 // By default left click toggles the panel, middle click joins the current
 // or next meeting, right click walks the common label formats. The Bar
@@ -61,7 +60,7 @@ BarWidget {
   readonly property var clickActions: Model.clickActions(setting("leftClick", "panel"), setting("middleClick", "join"), setting("rightClick", "format"))
   readonly property bool urgent: barState.phase === "live"
   readonly property bool emphasized: barState.phase === "imminent" || urgent
-  readonly property string barMeetingUrl: emphasized ? Model.meetingUrlFor(barState.event) : ""
+  readonly property string barMeetingUrl: Model.meetingUrlFor(barState.event)
   readonly property color phaseColor: urgent ? (bar ? bar.urgent : Commons.Color.urgent) : Commons.Color.accent
 
   readonly property string clockText: formatted(displayDate)
@@ -105,7 +104,7 @@ BarWidget {
     return Qt.locale(Strings.localeName(root.language)).toString(date, configuredFormat.replace(/ww/g, Model.isoWeekLiteral(date.getFullYear(), date.getMonth(), date.getDate())))
   }
 
-  // With an event, the click was on its visible Join chip. Without one it
+  // With an event, the click was on its visible meeting label. Without one it
   // was blind, so a link from an unknown host opens the panel instead.
   function join(event) {
     var meeting = event || Model.meetingToJoin(announcedEvents, Date.now(), barState.event)
@@ -256,18 +255,12 @@ BarWidget {
     bar: root.bar
     text: root.vertical ? "" : root.clockText
     labelVisible: false
+    interactive: false
     hasVisualContent: root.vertical ? root.verticalLines.length > 0 : text !== ""
     fixedWidth: root.vertical ? -1 : content.implicitWidth + scaledHorizontalMargin * 2
     fixedHeight: root.vertical ? root.verticalLines.length * Style.bar.iconSlot : -1
     horizontalMargin: 8.75
     verticalPadding: 8.75
-    tooltipText: root.announcing
-      ? Model.text(root.barState.event.title) + "\n" + Model.clickTooltip(root.clickActions, root.language)
-      : Model.clickTooltip(root.clickActions, root.language)
-
-    onPressed: function(b) {
-      root.runClick(root.clickActions[b === Qt.RightButton ? "right" : b === Qt.MiddleButton ? "middle" : "left"])
-    }
 
     Row {
       id: content
@@ -281,6 +274,19 @@ BarWidget {
         color: button.foreground
         font.family: button.fontFamily
         font.pixelSize: button.fontSize
+
+        WidgetButton {
+          anchors.centerIn: parent
+          width: parent.width
+          height: button.height
+          bar: root.bar
+          text: root.clockText
+          labelVisible: false
+          tooltipText: Model.clickTooltip(root.clickActions, root.language)
+          onPressed: function(b) {
+            root.runClick(root.clickActions[b === Qt.RightButton ? "right" : b === Qt.MiddleButton ? "middle" : "left"])
+          }
+        }
       }
 
       BarText {
@@ -308,26 +314,22 @@ BarWidget {
         font.family: button.fontFamily
         font.pixelSize: button.fontSize
         font.weight: root.emphasized ? Font.DemiBold : Font.Normal
-      }
 
-      Chip {
-        visible: root.announcing && root.barMeetingUrl !== ""
-        text: Strings.tr(root.language, "bar.join")
-        fontFamily: button.fontFamily
-        lineHeight: button.fontSize
-        fill: root.phaseColor
-        interactive: true
-        onClicked: root.join(root.barState.event)
-      }
-
-      Chip {
-        visible: root.announcing
-        text: Strings.tr(root.language, "bar.dismiss")
-        fontFamily: button.fontFamily
-        lineHeight: button.fontSize
-        fill: Qt.rgba(button.foreground.r, button.foreground.g, button.foreground.b, 0.6)
-        interactive: true
-        onClicked: root.dismiss(root.barState.event)
+        WidgetButton {
+          anchors.centerIn: parent
+          width: parent.width
+          height: button.height
+          bar: root.bar
+          text: parent.text
+          labelVisible: false
+          tooltipText: root.barMeetingUrl !== ""
+            ? Strings.tr(root.language, "bar.join")
+            : Model.clickTooltip(root.clickActions, root.language)
+          onPressed: function(b) {
+            if (b === Qt.LeftButton && root.barMeetingUrl !== "") root.join(root.barState.event)
+            else root.runClick(root.clickActions[b === Qt.RightButton ? "right" : b === Qt.MiddleButton ? "middle" : "left"])
+          }
+        }
       }
 
       Chip {
@@ -336,6 +338,18 @@ BarWidget {
         fontFamily: button.fontFamily
         lineHeight: button.fontSize
         fill: Qt.rgba(button.foreground.r, button.foreground.g, button.foreground.b, 0.6)
+      }
+    }
+
+    WidgetButton {
+      visible: root.vertical
+      anchors.fill: parent
+      bar: root.bar
+      text: root.clockText
+      labelVisible: false
+      tooltipText: Model.clickTooltip(root.clickActions, root.language)
+      onPressed: function(b) {
+        root.runClick(root.clickActions[b === Qt.RightButton ? "right" : b === Qt.MiddleButton ? "middle" : "left"])
       }
     }
 
@@ -374,17 +388,13 @@ BarWidget {
     renderType: root.fractionalScale ? Text.QtRendering : Text.NativeRendering
   }
 
-  // A small filled pill: the Join button and the "+N" badge. Only an
-  // interactive chip takes the left click; anything else falls through to
-  // the widget, so the clock's own clicks work on top of it.
+  // A small filled pill for the "+N" badge.
   component Chip: Rectangle {
     id: chip
     property alias text: chipLabel.text
     property string fontFamily: Style.font.family
     property real lineHeight: Style.font.body
     property color fill: Commons.Color.accent
-    property bool interactive: false
-    signal clicked()
 
     anchors.verticalCenter: parent ? parent.verticalCenter : undefined
     implicitWidth: chipLabel.implicitWidth + Style.space(8) * 2
@@ -401,14 +411,6 @@ BarWidget {
       font.pixelSize: Style.font.caption
       font.weight: Font.Bold
       renderType: root.fractionalScale ? Text.QtRendering : Text.NativeRendering
-    }
-
-    MouseArea {
-      anchors.fill: parent
-      enabled: chip.interactive
-      acceptedButtons: Qt.LeftButton
-      cursorShape: Qt.PointingHandCursor
-      onClicked: chip.clicked()
     }
   }
 }
