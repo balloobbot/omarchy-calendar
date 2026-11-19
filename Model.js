@@ -1240,7 +1240,7 @@ function slimReminderEvent(event) {
   return {
     id: event.id, start: event.start, end: event.end, allDay: event.allDay === true,
     dateKey: event.dateKey, title: event.title, location: event.location,
-    meetingUrl: event.meetingUrl, eventUrl: event.eventUrl
+    meetingUrl: event.meetingUrl, eventUrl: event.eventUrl, calendarId: event.calendarId
   }
 }
 

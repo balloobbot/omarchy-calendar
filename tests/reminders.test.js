@@ -179,7 +179,7 @@ test('pruneRecentReminders keeps only what can still be snoozed, without mutatin
 test('slimReminderEvent keeps what a snoozed reminder needs', () => {
   const slim = Model.slimReminderEvent(event({ description: 'long', reminders: [10], meetingUrl: 'https://meet.google.com/x' }))
   assert.deepEqual(Object.keys(slim).sort(),
-    ['allDay', 'dateKey', 'end', 'eventUrl', 'id', 'location', 'meetingUrl', 'start', 'title'])
+    ['allDay', 'calendarId', 'dateKey', 'end', 'eventUrl', 'id', 'location', 'meetingUrl', 'start', 'title'])
   assert.equal(slim.allDay, false)
   assert.equal(slim.meetingUrl, 'https://meet.google.com/x')
 })
