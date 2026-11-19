@@ -129,6 +129,7 @@ BarWidget {
   }
 
   readonly property var recentlyFired: reminders.recentlyFired
+  readonly property var dismissedEvents: reminders.dismissedEvents
 
   function canSnooze(event, nowMs) {
     return reminders.canSnooze(event, nowMs)

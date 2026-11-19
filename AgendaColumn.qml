@@ -55,6 +55,7 @@ Item {
   signal itemSelected(var item)
   signal joinRequested(var item)
   signal snoozeRequested(var item)
+  signal dismissRequested(var item)
   signal daySelected(string key)
   signal quickSubmitted(bool moreOptions)
   signal quickEscaped()
@@ -128,6 +129,7 @@ Item {
       onOpened: root.itemSelected(root.nextUp)
       onJoinRequested: root.joinRequested(root.nextUp)
       onSnoozeRequested: root.snoozeRequested(root.nextUp)
+      onDismissRequested: root.dismissRequested(root.nextUp)
     }
   }
 

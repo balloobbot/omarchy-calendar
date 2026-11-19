@@ -207,7 +207,7 @@ Panel {
   // Today's first timed event not yet over, shown above today's agenda.
   readonly property var nextUp: {
     if (!root.selectedIsToday) return null
-    var timed = root.daySections.timed
+    var timed = Model.undismissedEvents(root.daySections.timed, root.dismissedEvents, root.nowMs)
     for (var i = 0; i < timed.length; i++)
       if (timed[i].phase !== "past" && !timed[i].done && !Model.isDeclined(timed[i])) return timed[i]
     return null
@@ -216,6 +216,13 @@ Panel {
   // ---- Snoozing. Reminders are sent by the bar widget, which is always
   //      loaded; for a while after one fires, the panel offers to send it
   //      again in a few minutes.
+  readonly property var dismissedEvents: hostWidget && hostWidget.dismissedEvents ? hostWidget.dismissedEvents : ({})
+
+  function dismiss(event) {
+    if (event && root.hostWidget && typeof root.hostWidget.dismiss === "function")
+      root.hostWidget.dismiss(event)
+  }
+
   readonly property int snoozeMinutes: 5
   readonly property var recentlyFired: hostWidget && hostWidget.recentlyFired ? hostWidget.recentlyFired : ({})
   readonly property string snoozeText: tr("notify.snooze", [snoozeMinutes])
@@ -1173,6 +1180,7 @@ Panel {
               onItemSelected: function(item) { root.selectEvent(item) }
               onJoinRequested: function(item) { root.joinItem(item) }
               onSnoozeRequested: function(item) { root.snooze(item) }
+              onDismissRequested: function(item) { root.dismiss(item) }
               onDaySelected: function(key) { root.selectDay(key) }
               onQuickSubmitted: function(moreOptions) { root.submitQuickAdd(moreOptions) }
               onQuickEscaped: root.focusKeys()
@@ -1254,6 +1262,7 @@ Panel {
                   editable: root.isEditable(root.selectedItem)
                   deletable: root.isEditable(root.selectedItem)
                   busy: root.writeBusy
+                  dismissed: Model.isDismissed(root.selectedItem, root.dismissedEvents, root.nowMs)
                   snoozable: root.selectedSnoozable
                   snoozeText: root.snoozeText
                   foreground: root.contentForeground
@@ -1264,6 +1273,7 @@ Panel {
                   onDeleteRequested: root.deleteEvent(root.selectedItem)
                   onJoinRequested: root.joinItem(root.selectedItem)
                   onSnoozeRequested: root.snooze(root.selectedItem)
+                  onDismissRequested: root.dismiss(root.selectedItem)
                   onLinkOpened: function(url) { root.openExternally(url) }
                   onLinkCopied: function(url) { root.copyLink(url) }
                 }

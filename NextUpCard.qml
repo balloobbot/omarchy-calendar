@@ -24,6 +24,7 @@ Rectangle {
   signal opened()
   signal joinRequested()
   signal snoozeRequested()
+  signal dismissRequested()
 
   readonly property bool live: !!item && item.phase === "now"
   readonly property string meetingUrl: Model.meetingUrlFor(item)
@@ -110,6 +111,14 @@ Rectangle {
       foreground: root.foreground
       fontFamily: root.fontFamily
       onClicked: root.joinRequested()
+    }
+
+    SecondaryButton {
+      anchors.right: parent.right
+      text: Strings.tr(root.language, "bar.dismiss")
+      foreground: root.foreground
+      fontFamily: root.fontFamily
+      onClicked: root.dismissRequested()
     }
 
     SecondaryButton {

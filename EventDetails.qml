@@ -22,6 +22,7 @@ Column {
   // place and only stop answering, so the calendar never reads as read-only.
   property bool busy: false
   property bool snoozable: false
+  property bool dismissed: false
   property string snoozeText: ""
   property color foreground: Commons.Color.foreground
   property string fontFamily: Style.font.family
@@ -32,6 +33,7 @@ Column {
   signal deleteRequested()
   signal joinRequested()
   signal snoozeRequested()
+  signal dismissRequested()
   signal linkOpened(string url)
   signal linkCopied(string url)
 
@@ -213,6 +215,15 @@ Column {
         onClicked: root.linkCopied(root.meetingUrl)
       }
     }
+  }
+
+  SecondaryButton {
+    visible: !root.item.allDay && root.item.endMs > root.nowMs
+    enabled: !root.dismissed
+    text: root.tr(root.dismissed ? "insp.dismissed" : "bar.dismiss")
+    foreground: root.foreground
+    fontFamily: root.fontFamily
+    onClicked: root.dismissRequested()
   }
 
   SecondaryButton {
